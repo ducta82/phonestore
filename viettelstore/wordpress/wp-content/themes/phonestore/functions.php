@@ -106,11 +106,21 @@ function phonestore_scripts() {
 	wp_enqueue_style( 'phonestore-style', get_stylesheet_uri() );
 
 	wp_enqueue_script( 'phonestore-navigation', get_template_directory_uri() . '/js/navigation.js', array(), '20151215', true );
+	wp_enqueue_script( 'bootstrap', get_template_directory_uri() . '/Assets/js/bootstrap.min.js', array(), '0.1', true );
+	wp_enqueue_script( 'slimscroll', get_template_directory_uri() . '/Assets/js/jquery.slimscroll.min.js', array(), '0.1', true );
+	wp_enqueue_script( 'fixed-menu', get_template_directory_uri() . '/Assets/js/fixed-menu.js', array(), '0.1', true );
+	wp_enqueue_script( 'nprogress', get_template_directory_uri() . '/Assets/js/nprogress.js', array(), '0.1', true );
+	wp_enqueue_script( 'owl.carousel', get_template_directory_uri() . '/Assets/js/owl.carousel.min.js', array(), '0.1', true );
+	wp_enqueue_script( 'resizeproduce', get_template_directory_uri() . '/Assets/js/resizeproduce.js', array(), '0.1', true );
+	wp_enqueue_script( 'i_ajax', get_template_directory_uri() . '/Assets/js/i_ajax.js', array(), '0.1', true );
+	wp_enqueue_script( 'slidejs', get_template_directory_uri() . '/Assets/js/slidejs.min.js', array(), '0.1', true );
+	wp_enqueue_script( 'lazyload', get_template_directory_uri() . '/Assets/js/jquery.lazyload.min.js', array(), '0.1', true );
 	wp_enqueue_script( 'phonestore-custom', get_template_directory_uri() . '/js/custom.js', array(), '1.0', true );
 	wp_localize_script( 'phonestore-custom', 'ajax_object', array(
  
         // Các phương thức sẽ sử dụng
         'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'function_url'=> get_template_directory_uri().'/functions.php',
         'query_vars' => json_encode( $wp_query->query )
          
 ));
@@ -530,6 +540,57 @@ function crunchify_disable_comment_url($fields) {
     return $fields;
 }
 add_filter('comment_form_default_fields','crunchify_disable_comment_url');
+
+/*quick checkout*/
+
+add_action('wp_ajax_nopriv_get_product_by_id', 'get_product_by_id'); 
+add_action('wp_ajax_get_product_by_id', 'get_product_by_id');
+function get_product_by_id(){
+	if(isset($_POST['product_id'])){
+		$id = $_POST['product_id'];
+		$product = wc_get_product($id);
+	}
+	if($product->product_type == 'variable'){
+            $variable_product = new WC_Product_Variable($product);
+            $variations = $variable_product->get_available_variations();
+            $variation_args = array();
+            $variation_id = null;
+            foreach ($variations as $key => $value) {
+		?>
+		<form action="<?php echo esc_url( $product->add_to_cart_url() ); ?>"method="post" enctype='multipart/form-data'>
+			<input type="hidden" name="variation_id" value="<?php echo $value['variation_id']?>" />
+			<input type="hidden" name="product_id" value="<?php echo esc_attr( $id ); ?>" />
+			<?php
+			if(!empty($value['attributes'])){
+				foreach ($value['attributes'] as $attr_key => $attr_value) {
+				?>
+				<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
+				<?php
+				}
+			}
+			?>
+			<table>
+				<tbody>
+					<tr>
+						<td>
+							<b><?php echo implode('/', $value['attributes']);?></b>
+						</td>
+						<td>
+							<?php echo $value['price_html'];?>
+						</td>
+						<td>
+							<button type="submit" class="single_add_to_cart_button button alt"><?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?></button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+		<?php
+		}
+	}else{
+		echo "product simple";
+	}
+}
 /**
  * Implement the Custom Header feature.
  */
